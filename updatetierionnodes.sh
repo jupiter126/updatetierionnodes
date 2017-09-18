@@ -31,7 +31,10 @@ if [[ ! -f ~/.ssh/id_rsa ]]; then
 fi
 
 function f_list_nodes {
-cat nodelist.txt
+while read node; do
+	credits="$(ssh $user@$node "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+	echo "Node $node has $credits credits"
+done < nodelist.txt
 }
 
 function f_add_node {
