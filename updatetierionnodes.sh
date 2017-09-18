@@ -24,6 +24,10 @@ if [[ ! -f nodelist.txt ]]; then
 	touch nodelist.txt
 fi
 
+function f_reset_nodeaddress {
+nodeaddress=""
+}
+
 #if you don't have ssh keys setup, generate some
 if [[ ! -f ~/.ssh/id_rsa ]]; then
 	echo "generating some ssh keys, this might take some time... Please press enter 3 times when asked questions"
@@ -31,14 +35,15 @@ if [[ ! -f ~/.ssh/id_rsa ]]; then
 fi
 
 function f_list_nodes {
-while read node; do
-	credits="$(ssh $user@$node "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
-	echo "Node $node has $credits credits"
+while read nodeaddress; do
+	credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+	echo "Node $nodeaddress has $credits credits"
 done < nodelist.txt
+f_reset_nodeaddress
 }
 
 function f_add_node {
-nodeaddress=""
+f_reset_nodeaddress
 echo "please add your node's address"
 read nodeaddress
 if [[ "$nodeaddress" != "" ]]; then
@@ -49,13 +54,16 @@ if [[ "$nodeaddress" != "" ]]; then
 		ssh-copy-id $user@$nodeaddress
 	fi
 fi
+f_reset_nodeaddress
 }
 
 function f_del_node {
-nodeaddress=""
 f_list_nodes
+f_reset_nodeaddress
 echo "please type the address of the node you would like to remove from list"
 read nodeaddress
+echo "stopping node first"
+f_stop_node
 if [[ "$nodeaddress" != "" ]]; then
 	if [[ "$(grep $nodeaddress nodelist.txt)" != "" ]] ; then
 		sed -i "/$nodeaddress/d" nodelist.txt && echo "deleted $nodeaddress"
@@ -63,28 +71,53 @@ if [[ "$nodeaddress" != "" ]]; then
 		echo "$nodeaddress not in list, not deleting"
 	fi
 fi
+f_reset_nodeaddress
+}
+
+function f_stop_node {
+cat nodelist.txt
+if [[ "$nodeaddress" = "" ]]; then
+	echo "Please give the address of the node you want to stop"
+	read nodeaddress
+fi
+if [[ "$nodeaddress" != "" ]]; then
+	ssh $user@$nodeaddress "cd ~/chainpoint-node && make down"
+fi
+}
+
+function f_start_node {
+cat nodelist.txt
+if [[ "$nodeaddress" = "" ]]; then
+	echo "Please give the address of the node you want to start"
+	read nodeaddress
+fi
+if [[ "$nodeaddress" != "" ]]; then
+	ssh $user@$nodeaddress "cd ~/chainpoint-node && make up"
+fi
 }
 
 function f_update_nodes {
-nodeaddress=""
 while read nodeaddress; do
 	ssh $user@$nodeaddress "cd ~/chainpoint-node && git pull && make down && make up"
 done < nodelist.txt
+f_reset_nodeaddress
 }
 
 function m_main_menu {
 while [ 1 ]
 do
 	PS3='Choose a number: '
-	select choix in "listnodes" "addnode" "delnode" "update" "quit"
+	select choix in "listnodes" "addnode" "delnode" "update" "startnode" "stopnode" "quit"
 	do
 		break
 	done
 	case $choix in
-		listnodes) 	 f_list_nodes;;
-		addnode)	 f_add_node;;
-		delnode)	 f_del_node;;
-		update)		 f_update_nodes;;
+		listnodes) 	f_list_nodes;;
+		addnode)	f_add_node;;
+		delnode)	f_del_node;;
+		update)		f_update_nodes;;
+		startnode)	f_start_node && f_reset_nodeaddress;;
+		stopnode)	f_stop_node && f_reset_nodeaddress;;
 		quit)		exit ;;
 		*)		echo "nope" ;;
 	esac
