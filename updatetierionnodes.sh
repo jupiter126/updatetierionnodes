@@ -41,23 +41,43 @@ if [[ ! -f ~/.ssh/id_rsa ]]; then
 fi
 
 function f_list_nodes {
-#while read nodeaddress; do
-for nodeaddress in $(cat nodelist.txt); do
-	credits=""
-	credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
-	if [[ "$credits" = "" ]]; then
-		if [[ "$spendmode" = "1" ]]; then
-			chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
-			credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
-			echo "Node $nodeaddress has $credits credits"
-		else
-			credits="na"
-		fi
-	else
-		echo "Node $nodeaddress has $credits credits"
-	fi
+#for nodeaddress in $(cat nodelist.txt); do
+#	credits=""
+#	credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+#	if [[ "$credits" = "" ]]; then
+#		if [[ "$spendmode" = "1" ]]; then
+#			chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
+#			credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+#			echo "Node $nodeaddress has $credits credits"
+#		else
+#			credits="na"
+#		fi
+#	else
+#		echo "Node $nodeaddress has $credits credits"
+#	fi
+#done
+
+IFS=$'\n' read -d '' -r -a lines < nodelist.txt
+for nodeaddress in "${lines[@]}"
+do
+        credits=""
+        credits="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+        if [[ "$credits" = "" ]]; then
+                if [[ "$spendmode" = "1" ]]; then
+                        chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
+                        credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+                        echo "Node $nodeaddress has $credits credits"
+                else
+                        credits="na"
+                fi
+        else
+                echo "Node $nodeaddress has $credits credits"
+        fi
 done
-#done < nodelist.txt
+
+
+
+
 f_reset_nodeaddress
 }
 
@@ -66,7 +86,7 @@ f_reset_nodeaddress
 echo "please add your node's address"
 read nodeaddress
 if [[ "$nodeaddress" != "" ]]; then
-	if [[ "$(grep $nodeaddress nodelist.txt)" != "" ]] ; then
+	if [[ "$(grep \"$nodeaddress\" nodelist.txt)" != "" ]] ; then
 		echo "$nodeaddress allready in list, not adding"
 	else
 		echo "$nodeaddress" >> nodelist.txt && echo "added $nodeaddress to list, adding ssh key now.  You will need to type the users password"
@@ -84,7 +104,7 @@ read nodeaddress
 echo "stopping node first"
 f_stop_node
 if [[ "$nodeaddress" != "" ]]; then
-	if [[ "$(grep $nodeaddress nodelist.txt)" != "" ]] ; then
+	if [[ "$(grep \"$nodeaddress\" nodelist.txt)" != "" ]] ; then
 		sed -i "/$nodeaddress/d" nodelist.txt && echo "deleted $nodeaddress"
 	else
 		echo "$nodeaddress not in list, not deleting"
