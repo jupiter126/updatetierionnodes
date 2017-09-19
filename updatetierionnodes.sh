@@ -46,7 +46,6 @@ while read nodeaddress; do
 	credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
 	if [[ "$credits" = "" ]]; then
 		if [[ "$spendmode" = "1" ]]; then
-			echo lol
 			chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
 			credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
 		fi
