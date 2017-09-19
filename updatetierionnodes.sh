@@ -14,9 +14,10 @@
 
 #settings
 #script assumes that the node runs with the same username on each node
-user=tierionnode
+#user=tierionnode
+user=jupiter
 #if credits are not in node logs, should this script spend a credit on a hash to find out credit?
-spendmode="0"
+spendmode="1"
 
 if [[ "$spendmode" = "1" ]]; then
 	command -v chp >/dev/null 2>&1 || { echo >&2 "spendmode is set on 1, which requires chainpoint-cli (chp) to be installed, please follow instructions at https://github.com/chainpoint/chainpoint-cli or set spendmode=0"; exit 1; }
@@ -46,7 +47,9 @@ while read nodeaddress; do
 	credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
 	if [[ "$credits" = "" ]]; then
 		if [[ "$spendmode" = "1" ]]; then
-			chp submit -s $nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
+			echo lol
+			chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
+			credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
 		fi
 	fi
 	echo "Node $nodeaddress has $credits credits"
