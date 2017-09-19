@@ -16,10 +16,11 @@
 #script assumes that the node runs with the same username on each node
 user=tierionnode
 #if credits are not in node logs, should this script spend a credit on a hash to find out credit?
-spendmode=1
+spendmode="0"
 
 if [[ "$spendmode" = "1" ]]; then
 	command -v chp >/dev/null 2>&1 || { echo >&2 "spendmode is set on 1, which requires chainpoint-cli (chp) to be installed, please follow instructions at https://github.com/chainpoint/chainpoint-cli or set spendmode=0"; exit 1; }
+	echo lol
 fi
 
 #Usage: you can use this script by simply starting it in bash
