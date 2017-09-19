@@ -14,8 +14,7 @@
 
 #settings
 #script assumes that the node runs with the same username on each node
-#user=tierionnode
-user=jupiter
+user=tierionnode
 #if credits are not in node logs, should this script spend a credit on a hash to find out credit?
 spendmode="1"
 
