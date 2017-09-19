@@ -48,9 +48,14 @@ while read nodeaddress; do
 		if [[ "$spendmode" = "1" ]]; then
 			chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
 			credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+			echo "Node $nodeaddress has $credits credits"
+		else
+			credits="na"
 		fi
+	else
+		echo "Node $nodeaddress has $credits credits"
 	fi
-	echo "Node $nodeaddress has $credits credits"
+	echo $nodeaddress
 done < nodelist.txt
 f_reset_nodeaddress
 }
@@ -113,6 +118,7 @@ function f_update_nodes {
 while read nodeaddress; do
 	ssh $user@$nodeaddress "cd ~/chainpoint-node && nstatus=\"$(git pull|head -n1|grep Already)\" && if [[ \"$nstatus\" != \"\" ]];then make down && make up; fi"
 done < nodelist.txt
+exit
 f_reset_nodeaddress
 }
 

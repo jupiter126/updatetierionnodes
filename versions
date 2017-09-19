@@ -2,3 +2,4 @@
 #0.01 added spendmode
 #0.02 corrected bug in listing
 #0.03 modified updated function to consume less credits (as nodes wont be restarted unless there was a change in git)
+#0.04 attempt at correcting loop bug in list
