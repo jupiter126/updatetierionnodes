@@ -22,9 +22,9 @@ git pull
 
 #cron mode<br />
 crontab -e<br />
-0 0 * * * ~/updatetierionnodes.sh cron<br />
+0 * * * * ~/updatetierionnodes.sh cron<br />
 
 to get there, depending of your default editor, you might have to do:
-# ctrl-x Y enter
-# or
-# escape :wq enter
+- ctrl-x Y enter
+or
+- escape :wq enter

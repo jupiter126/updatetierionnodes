@@ -64,7 +64,7 @@ do
         credits="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
         if [[ "$credits" = "" ]]; then
                 if [[ "$spendmode" = "1" ]]; then
-                        chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
+                        chp submit -s http://$nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ") && sleep 1
                         credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
                         echo "Node $nodeaddress has $credits credits"
                 else
