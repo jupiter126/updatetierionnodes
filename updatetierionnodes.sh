@@ -15,6 +15,12 @@
 #settings
 #script assumes that the node runs with the same username on each node
 user=tierionnode
+#if credits are not in node logs, should this script spend a credit on a hash to find out credit?
+spendmode=1
+
+if [[ "$spendmode" = "1" ]]; then
+	command -v chp >/dev/null 2>&1 || { echo >&2 "spendmode is set on 1, which requires chainpoint-cli (chp) to be installed, please follow instructions at https://github.com/chainpoint/chainpoint-cli or set spendmode=0"; exit 1; }
+fi
 
 #Usage: you can use this script by simply starting it in bash
 # you can also automate the update with cron by calling "updatetierionnodes.sh cron"
@@ -36,7 +42,13 @@ fi
 
 function f_list_nodes {
 while read nodeaddress; do
+	credits=""
 	credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+	if [[ "$credits" = "" ]]; then
+		if [[ "$spendmode" = "1" ]]; then
+			chp submit -s $nodeaddress $(echo thierionstatus|sha256sum|cut -f1 -d" ")
+		fi
+	fi
 	echo "Node $nodeaddress has $credits credits"
 done < nodelist.txt
 f_reset_nodeaddress
@@ -129,5 +141,8 @@ done
 if [[ "$1" = "cron" ]]; then
 	f_update_nodes
 else
+	echo -e '\E[37;44m'"\033[1mIf this is helpful, please consider making a donation at\033[0m"
+	echo -e "\033[1;31m0x5B23d5c12BF6a3C016b6A92C0Ca319F14998f3D8\033[m"
+	echo -e "I wrote this script for you... as I have only one node!  dont have enough TNT to spawn more ;)"
 	m_main_menu
 fi
