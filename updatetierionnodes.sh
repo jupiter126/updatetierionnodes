@@ -41,7 +41,8 @@ if [[ ! -f ~/.ssh/id_rsa ]]; then
 fi
 
 function f_list_nodes {
-while read nodeaddress; do
+#while read nodeaddress; do
+for nodeaddress in $(cat nodelist.txt); do
 	credits=""
 	credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
 	if [[ "$credits" = "" ]]; then
@@ -55,8 +56,8 @@ while read nodeaddress; do
 	else
 		echo "Node $nodeaddress has $credits credits"
 	fi
-	echo $nodeaddress
-done < nodelist.txt
+done
+#done < nodelist.txt
 f_reset_nodeaddress
 }
 
