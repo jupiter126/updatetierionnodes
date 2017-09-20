@@ -62,8 +62,6 @@ function f_updatefailingnode {
 echo "$state"
 if [[ "$state" != "4" ]] && [[ "$updatefailingnodes" = "1"]]; then
 	f_update_node
-	sleep 5
-	f_get_node_state
 	updatednode="  - $red Node has just been updated$def"
 fi
 }
