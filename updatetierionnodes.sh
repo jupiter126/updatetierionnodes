@@ -139,7 +139,6 @@ function f_update_nodes {
 while read nodeaddress; do
 	ssh $user@$nodeaddress "cd ~/chainpoint-node && nstatus=\"$(git pull|head -n1|grep Already)\" && if [[ \"$nstatus\" != \"\" ]];then make down && make up; fi"
 done < nodelist.txt
-exit
 f_reset_nodeaddress
 }
 
