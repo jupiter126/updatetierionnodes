@@ -13,8 +13,7 @@
 
 
 #settings: please check that these options match your needs
-#user=tierionnode 	#script assumes that the node runs with the same username on each node
-user=jupiter
+user=tierionnode 	#script assumes that the node runs with the same username on each node
 spendmode="1"    	#if credits are not in node logs, should this script spend a credit on a hash to find out credit?
 sshcopyid="1"		#if set to 1, copies the ssh keys to nodes during addnode, else doesn't
 updatefailingnodes="1"	#if a node does not have a 4 nodestatus, updateit
