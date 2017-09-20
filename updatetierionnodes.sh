@@ -13,11 +13,18 @@
 
 
 #settings: please check that these options match your needs
-user=tierionnode 	#script assumes that the node runs with the same username on each node
-user=jupiter
-spendmode="1"    	#if credits are not in node logs, should this script spend a credit on a hash to find out credit?
-sshcopyid="1"		#if set to 1, copies the ssh keys to nodes during addnode, else doesn't
-updatefailingnodes="1"	#if a node does not have a 4 nodestatus, updateit
+if [[ ! -f tntupdatesettings.sh ]]; then
+	echo '#!/bin/bash' > tntupdatesettings.sh
+	echo "Please enter the username to use to login to your nodes"
+	read user
+	echo "user=$user 	#script assumes that the node runs with the same username on each node" >> tntupdatesettings.sh
+	echo 'spendmode="1"    	#if credits are not in node logs, should this script spend a credit on a hash to find out credit?' >> tntupdatesettings.sh
+	echo 'sshcopyid="1"		#if set to 1, copies the ssh keys to nodes during addnode, else does not' >> tntupdatesettings.sh
+	echo 'updatefailingnodes="1"	#if a node does not have a 4 nodestatus, update it' >> tntupdatesettings.sh
+	source tntupdatesettings.sh
+else
+	source tntupdatesettings.sh
+fi
 
 #start of code: do not edit below unless you know what you are doing
 if [[ "$spendmode" = "1" ]]; then
@@ -77,7 +84,7 @@ function f_stats {
 if [[ "$bcisthere" = "1" ]]; then
 	totalnodecount="$(curl -s https://stellartoken.com/tnt_node_stats|grep 'our best guess'|cut -f4 -d\<|sed 's/b>//')"
 	nodecount="$(cat nodelist.txt |wc -l|tr -d ' ')"
-	prova=$(echo 'scale=5;'"$nodecount/$totalnodecount*48*100"|bc)
+	prova=$(echo 'scale=5;'"1/$totalnodecount*48*100"|bc)
 	winstat=$(echo 'scale=2;'"$nodecount*$prova"|bc)
 	echo "This function is in development and will be updated to reflect live/real current number of eligible nodes"
 	echo "$bol Total nodes = $totalnodecount$def : With your $gre$nodecount node(s)$def, you have a $red$winstat%$def of winning the lottery on a 24 hour period"
