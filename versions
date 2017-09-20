@@ -4,4 +4,7 @@
 #0.03 modified updated function to consume less credits (as nodes wont be restarted unless there was a change in git)
 #0.04 attempt at correcting loop bug in list
 #0.05 second attempt at correcting loop bug in list (thanks to JR from tierion telegram!)
-
+#0.06 Merged Mete Cirakoglu's changes so the script now runs natively on OSX
+#0.07 Refactorised update functions
+#0.08 Added new color model using tput
+#0.09 Added getnodeethaddress function, and option for sshcopyid
