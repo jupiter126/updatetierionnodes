@@ -49,7 +49,8 @@ nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .
 }
 
 function f_get_node_state {
-state="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|sed 's/true/true\n/g'|grep -c 'true')"
+#state="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|sed 's/true/true\n/g'|grep -c 'true')"
+state="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w)"
 if [[ "$state" = "4" ]]; then
 	nodestate="$gre$state$def"
 else
@@ -58,9 +59,10 @@ fi
 }
 
 function f_updatefailingnode {
+echo "$state"
 if [[ "$state" != "4" ]]; then
 	f_update_node
-	sleep 20
+	sleep 5
 	f_get_node_state
 	updatednode="  - $red Node has just been updated$def"
 fi
