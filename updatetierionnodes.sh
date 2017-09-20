@@ -13,7 +13,8 @@
 
 
 #settings: please check that these options match your needs
-user=tierionnode 	#script assumes that the node runs with the same username on each node
+#user=tierionnode 	#script assumes that the node runs with the same username on each node
+user=jupiter 	#script assumes that the node runs with the same username on each node
 spendmode="1"    	#if credits are not in node logs, should this script spend a credit on a hash to find out credit?
 sshcopyid="1"		#if set to 1, copies the ssh keys to nodes during addnode, else doesn't
 
@@ -44,27 +45,36 @@ if [[ ! -f ~/.ssh/id_rsa ]]; then
 	ssh-keygen -t rsa -b 8192
 fi
 
-function get_node_eth_add {
+function f_get_node_eth_add {
 nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
+}
+
+function f_get_node_state {
+nodestate="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|sed 's/true/true\n/g'|grep -c 'true')"
+if [[ "$nodestate" = "4" ]]; then
+	nodestate="$gre$nodestate$def"
+else
+	nodestate="$red$nodestate$def"
+fi
 }
 
 function f_list_nodes {
 IFS=$'\n' read -d '' -r -a lines < nodelist.txt
 for nodeaddress in "${lines[@]}"
 do
+	f_get_node_eth_add
+	f_get_node_state
         credits=""
         credits="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
         if [[ "$credits" = "" ]]; then
                 if [[ "$spendmode" = "1" ]]; then
 			chp submit -s http://$nodeaddress $(echo -n tierionstatus | shasum -a 256 | awk '{print toupper($1)}') && sleep 1
                         credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
-                        echo "Node $nodeaddress has $credits credits"
                 else
                         credits="na"
                 fi
-        else
-                echo "Node $nodeaddress has $credits credits"
         fi
+	echo "Node $bol$nodeaddress$def has $blu$credits$def credits  -  state = $nodestate"
 done
 f_reset_nodeaddress
 }
