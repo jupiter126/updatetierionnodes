@@ -60,7 +60,7 @@ fi
 
 function f_updatefailingnode {
 echo "$state"
-if [[ "$state" != "4" ]]; then
+if [[ "$state" != "4" ]] && [[ "$updatefailingnodes" = "1"]]; then
 	f_update_node
 	sleep 5
 	f_get_node_state
@@ -86,7 +86,7 @@ do
                 fi
         fi
 	echo "Node $bol$nodeaddress$def has $blu$credits$def credits  -  state = $nodestate$updatednode"
-f_reset_nodeaddress
+	f_reset_nodeaddress
 done
 }
 
