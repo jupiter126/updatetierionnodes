@@ -12,22 +12,23 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-#settings
+#settings: please check that these options match your needs
 user=tierionnode 	#script assumes that the node runs with the same username on each node
 spendmode="1"    	#if credits are not in node logs, should this script spend a credit on a hash to find out credit?
 sshcopyid="1"		#if set to 1, copies the ssh keys to nodes during addnode, else doesn't
 
+#start of code: do not edit below unless you know what you are doing
 if [[ "$spendmode" = "1" ]]; then
 	command -v chp >/dev/null 2>&1 || { echo >&2 "spendmode is set on 1, which requires chainpoint-cli (chp) to be installed, please follow instructions at https://github.com/chainpoint/chainpoint-cli or set spendmode=0"; exit 1; }
 fi
 
 if [[ "$(command -v tput)" != "" ]]; then  #configure tput variables for colors if tput is available, else suggest installing it
 	def=$(tput sgr0);bol=$(tput bold);red=$(tput setaf 1;tput bold);gre=$(tput setaf 2;tput bold);yel=$(tput setaf 3;tput bold);blu=$(tput setaf 4;tput bold);mag=$(tput setaf 5;tput bold);cya=$(tput setaf 6;tput bold)
-	echo "roses are$red red$def, sky is$blu blue$def, test is$cya test$def, and leaf is$gre green$def"
+	echo "$bold Usage example:$def roses are$red red$def, sky is$blu blue$def, test is$cya test$def, and leaf is$gre green$def" #remove this line later
 else
 	echo -e "\033[1;31mtput is not installed: install it for pretty colors ;)\033[m"
 fi
-exit
+
 if [[ ! -f nodelist.txt ]]; then  #if listfile doesn't exist, we create it
 	touch nodelist.txt
 fi
@@ -77,7 +78,7 @@ if [[ "$nodeaddress" != "" ]]; then
 		echo "$nodeaddress allready in list, not adding"
 	else
 		echo "$nodeaddress" >> nodelist.txt && echo "added $nodeaddress to list, adding ssh key now.  You will need to type the users password"
-		if [[ "$sshcopyid" = "1" ]]: then
+		if [[ "$sshcopyid" = "1" ]]; then
 			ssh-copy-id $user@$nodeaddress
 		fi
 	fi
@@ -171,8 +172,8 @@ done
 if [[ "$1" = "cron" ]]; then
 	f_update_nodes
 else
-	echo -e '\E[37;44m'"\033[1mIf this is helpful, please consider making a donation at\033[0m"
-	echo -e "\033[1;31m0x5B23d5c12BF6a3C016b6A92C0Ca319F14998f3D8\033[m"
-	echo -e "I wrote this script for you... as I have only one node!  dont have enough TNT to spawn more ;)"
+	echo "$blu If this is helpful, please consider making a donation at"
+	echo "$red 0x5B23d5c12BF6a3C016b6A92C0Ca319F14998f3D8$def"
+	echo "$bol I wrote this script for you... as I have only one node!  dont have enough TNT to spawn more ;)$def"
 	m_main_menu
 fi
