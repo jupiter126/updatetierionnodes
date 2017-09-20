@@ -59,8 +59,7 @@ fi
 }
 
 function f_updatefailingnode {
-echo "$state"
-if [ "$state" != "4" ] && [ "$updatefailingnodes" = "1"]; then
+if [[ "$state" != "4" && "$updatefailingnodes" = "1" ]]; then
 	f_update_node
 	updatednode="  - $red Node has just been updated$def"
 fi
