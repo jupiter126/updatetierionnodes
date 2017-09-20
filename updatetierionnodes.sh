@@ -14,6 +14,7 @@
 
 #settings: please check that these options match your needs
 user=tierionnode 	#script assumes that the node runs with the same username on each node
+user=jupiter
 spendmode="1"    	#if credits are not in node logs, should this script spend a credit on a hash to find out credit?
 sshcopyid="1"		#if set to 1, copies the ssh keys to nodes during addnode, else doesn't
 updatefailingnodes="1"	#if a node does not have a 4 nodestatus, updateit
@@ -74,12 +75,12 @@ fi
 
 function f_stats {
 if [[ "$bcisthere" = "1" ]]; then
-	totalnodecount=3048
+	totalnodecount="$(curl -s https://stellartoken.com/tnt_node_stats|grep 'our best guess'|cut -f4 -d\<|sed 's/b>//')"
 	nodecount="$(cat nodelist.txt |wc -l|tr -d ' ')"
 	prova=$(echo 'scale=5;'"$nodecount/$totalnodecount*48*100"|bc)
 	winstat=$(echo 'scale=2;'"$nodecount*$prova"|bc)
 	echo "This function is in development and will be updated to reflect live/real current number of eligible nodes"
-	echo "With your $gre$nodecount node(s)$def, you have a $red$winstat%$def of winning the lottery on a 24 hour period"
+	echo "$bol Total nodes = $totalnodecount$def : With your $gre$nodecount node(s)$def, you have a $red$winstat%$def of winning the lottery on a 24 hour period"
 	echo "With current reward of 6537 and minimum of 2500 TNT,$bol provable daily profit is $(echo 'scale=4;'"6537*$prova/2500"|bc)%$def"
 fi
 }
