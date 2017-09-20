@@ -9,3 +9,4 @@
 #0.08  Added new color model using tput
 #0.09  Added getnodeethaddress function, and option for sshcopyid
 #0.10  Added node status to list
+#0.11  Added autoupdate of nodes if eligibility failure detected

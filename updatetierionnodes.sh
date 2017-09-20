@@ -14,9 +14,10 @@
 
 #settings: please check that these options match your needs
 #user=tierionnode 	#script assumes that the node runs with the same username on each node
-user=jupiter 	#script assumes that the node runs with the same username on each node
+user=jupiter
 spendmode="1"    	#if credits are not in node logs, should this script spend a credit on a hash to find out credit?
 sshcopyid="1"		#if set to 1, copies the ssh keys to nodes during addnode, else doesn't
+updatefailingnodes="1"	#if a node does not have a 4 nodestatus, updateit
 
 #start of code: do not edit below unless you know what you are doing
 if [[ "$spendmode" = "1" ]]; then
@@ -25,7 +26,7 @@ fi
 
 if [[ "$(command -v tput)" != "" ]]; then  #configure tput variables for colors if tput is available, else suggest installing it
 	def=$(tput sgr0);bol=$(tput bold);red=$(tput setaf 1;tput bold);gre=$(tput setaf 2;tput bold);yel=$(tput setaf 3;tput bold);blu=$(tput setaf 4;tput bold);mag=$(tput setaf 5;tput bold);cya=$(tput setaf 6;tput bold)
-	echo "$bold Usage example:$def roses are$red red$def, sky is$blu blue$def, test is$cya test$def, and leaf is$gre green$def" #remove this line later
+#	echo "$bold Usage example:$def roses are$red red$def, sky is$blu blue$def, test is$cya test$def, and leaf is$gre green$def" #remove this line later
 else
 	echo -e "\033[1;31mtput is not installed: install it for pretty colors ;)\033[m"
 fi
@@ -35,8 +36,7 @@ if [[ ! -f nodelist.txt ]]; then  #if listfile doesn't exist, we create it
 fi
 
 function f_reset_nodeaddress { #resets nodeaddress and nodeethadd
-nodeaddress=""
-nodeethadd=""
+nodeaddress="";nodeethadd="";updatednode="";nodestate="";state=""
 }
 
 #if you don't have ssh keys setup, generate some
@@ -50,11 +50,20 @@ nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .
 }
 
 function f_get_node_state {
-nodestate="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|sed 's/true/true\n/g'|grep -c 'true')"
-if [[ "$nodestate" = "4" ]]; then
-	nodestate="$gre$nodestate$def"
+state="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|sed 's/true/true\n/g'|grep -c 'true')"
+if [[ "$state" = "4" ]]; then
+	nodestate="$gre$state$def"
 else
-	nodestate="$red$nodestate$def"
+	nodestate="$red$state$def"
+fi
+}
+
+function f_updatefailingnode {
+if [[ "$state" != "4" ]]; then
+	f_update_node
+	sleep 20
+	f_get_node_state
+	updatednode="  - $red Node has just been updated$def"
 fi
 }
 
@@ -64,6 +73,7 @@ for nodeaddress in "${lines[@]}"
 do
 	f_get_node_eth_add
 	f_get_node_state
+	f_updatefailingnode
         credits=""
         credits="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
         if [[ "$credits" = "" ]]; then
@@ -74,9 +84,9 @@ do
                         credits="na"
                 fi
         fi
-	echo "Node $bol$nodeaddress$def has $blu$credits$def credits  -  state = $nodestate"
-done
+	echo "Node $bol$nodeaddress$def has $blu$credits$def credits  -  state = $nodestate$updatednode"
 f_reset_nodeaddress
+done
 }
 
 function f_add_node {
@@ -187,3 +197,8 @@ else
 	echo "$bol I wrote this script for you... as I have only one node!  dont have enough TNT to spawn more ;)$def"
 	m_main_menu
 fi
+
+
+
+
+
