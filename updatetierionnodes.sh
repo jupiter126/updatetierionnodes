@@ -30,6 +30,13 @@ else
 	echo -e "\033[1;31mtput is not installed: install it for pretty colors ;)\033[m"
 fi
 
+if [[ "$(command -v bc)" = "" ]]; then  #configure tput variables for colors if tput is available, else suggest installing it
+	echo "Please install bc if you want some stats"
+	bcisthere="0"
+else
+	bcisthere="1"
+fi
+
 if [[ ! -f nodelist.txt ]]; then  #if listfile doesn't exist, we create it
 	touch nodelist.txt
 fi
@@ -65,6 +72,18 @@ if [[ "$state" != "4" && "$updatefailingnodes" = "1" ]]; then
 fi
 }
 
+function f_stats {
+if [[ "$bcisthere" = "1" ]]; then
+	totalnodecount=3048
+	nodecount="$(cat nodelist.txt |wc -l|tr -d ' ')"
+	prova=$(echo 'scale=5;'"$nodecount/$totalnodecount*48*100"|bc)
+	winstat=$(echo 'scale=2;'"$nodecount*$prova"|bc)
+	echo "This function is in development and will be updated to reflect live/real current number of eligible nodes"
+	echo "With your $gre$nodecount node(s)$def, you have a $red$winstat%$def of winning the lottery on a 24 hour period"
+	echo "With current reward of 6537 and minimum of 2500 TNT,$bol provable daily profit is $(echo 'scale=4;'"6537*$prova/2500"|bc)%$def"
+fi
+}
+
 function f_list_nodes {
 IFS=$'\n' read -d '' -r -a lines < nodelist.txt
 for nodeaddress in "${lines[@]}"
@@ -85,11 +104,12 @@ do
 	echo "Node $bol$nodeaddress$def has $blu$credits$def credits  -  state = $nodestate$updatednode"
 	f_reset_nodeaddress
 done
+f_stats
 }
 
 function f_add_node {
 f_reset_nodeaddress
-echo "please add your node's address"
+echo "please add your node's address, $grelike 1.2.3.4$def -$red not http://1.2.3.4$def!!!"
 read nodeaddress
 if [[ "$nodeaddress" != "" ]]; then
 	if [[ "$(grep \"$nodeaddress\" nodelist.txt)" != "" ]] ; then
