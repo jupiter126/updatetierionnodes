@@ -28,3 +28,9 @@ to get there, depending of your default editor, you might have to do:
 - ctrl-x Y enter
 or
 - escape :wq enter
+
+#install mode <br />
+- You can install many nodes automatically by creating a installnodes.txt file, which contains one line per node, as:
+-- nodeip,nodeethaddress,rootpassword
+-- 1.2.3.4,0x5B23d5c12BF6a3C016b6A92C0Ca319F14998f3D8,D54fda68dcN5qVsfP
+- You can also install nodes one by one if you did not create that file

@@ -191,42 +191,8 @@ do
 done
 }
 
-function m_main_menu {
-while [ 1 ]
-do
-	PS3='Choose a number: '
-	select choix in "listnodes" "addnode" "delnode" "updatenode" "updateall" "startnode" "stopnode" "quit"
-	do
-		break
-	done
-	case $choix in
-		listnodes) 	f_list_nodes;;
-		addnode)	f_add_node;;
-		delnode)	f_del_node;;
-		updatenode)	f_update_node;;
-		updateall)	f_update_nodes;;
-		startnode)	f_start_node && f_reset_nodeaddress;;
-		stopnode)	f_stop_node && f_reset_nodeaddress;;
-		quit)		exit ;;
-		*)		echo "nope" ;;
-	esac
-done
-}
-
-
-#script entry point
-if [[ "$1" = "cron" ]]; then
-	f_update_nodes
-else
-	echo "$blu If this is helpful, please consider making a donation at"
-	echo "$red 0x5B23d5c12BF6a3C016b6A92C0Ca319F14998f3D8$def"
-	echo "$bol I wrote this script for you... as I have only one node!  dont have enough TNT to spawn more ;)$def"
-	m_main_menu
-fi
-
 function f_install_nodes {
 mapfile -t nodes<installnodes.txt
-
 for node in "${nodes[@]}"; do
 	IFS=, read nodeip nodeethdaddress noderootpass <<< $node
 	echo "$noderootpass">noderootpass.txt
@@ -244,6 +210,13 @@ echo "$nodeip">>nodelist.txt
 
 function f_install_main {
 echo "$red Note that you should: 1. Create ethereum address(es), 2. Install and start node(s), 3. Send some TNT to the address(es):$bol IN THAT SPECIFIC ORDER OF ACTION$def"
+if [[ ! -f installnodes.txt ]]; then
+	echo "$gre For autoinstall of multiple nodes, please create a "installnodes.txt" with one line per node in the following format:$bol nodeip,nodeethaddress,rootpassword$red -  press y to edit list now$def."
+	read iwantmany
+	if [[ "$iwantmany" = "y" ]]; then
+		$EDITOR installnodes.txt
+	fi
+fi
 #requires sshpass and shred
 for requirements in sshpass shred; do
 	command -v $requirements >/dev/null 2>&1 || { echo >&2 "node installer requires $requirements, please install"; exit 1; }
@@ -265,6 +238,60 @@ else
 	read nodeethadd
 	f_install_node
 fi
-shred -u -n 10 userpass.txt
-shred -u -n 10 noderootpass.txt
+shred -u -n 10 userpass.txt noderootpass.txt installnodes.txt
 }
+
+function f_backupprivatekeys {
+if [[ ! -f privatekeys.txt ]]; then
+	touch privatekeys.txt
+fi
+IFS=$'\n' read -d '' -r -a lines < nodelist.txt
+for nodeaddress in "${lines[@]}"
+do
+	f_get_node_eth_add
+	if [[ "$(grep $nodeethadd privatekeys.txt)" = "" ]]; then
+		privkey=$(ssh $user@$nodeaddress "cd chainpoint-node && docker-compose logs -t | grep 'back me up'|cut -f4 -d:|tr -d ' '")
+		if [[ "$privkey" != "" ]]; then
+			echo "$nodeethadd  -  $privkey">>privatekeys.txt
+		else
+			echo "$red There was an issue backupping $nodeaddress private key"
+		fi
+	fi
+done
+}
+
+function m_main_menu {
+while [ 1 ]
+do
+	PS3='Choose a number: '
+	select choix in "listnodes" "addnode" "delnode" "updatenode" "updateall" "startnode" "stopnode" "installnodes" "backupprivkeys" "quit"
+	do
+		break
+	done
+	case $choix in
+		listnodes) 	f_list_nodes;;
+		addnode)	f_add_node;;
+		delnode)	f_del_node;;
+		updatenode)	f_update_node;;
+		updateall)	f_update_nodes;;
+		startnode)	f_start_node && f_reset_nodeaddress;;
+		stopnode)	f_stop_node && f_reset_nodeaddress;;
+		installnodes)	f_install_main;;
+		backupprivkeys)	f_backupprivatekeys;;
+		quit)		exit ;;
+		*)		echo "nope" ;;
+	esac
+done
+}
+
+#script entry point
+if [[ "$1" = "cron" ]]; then
+	f_update_nodes
+elif [[ "$1" = "install" ]]; then
+	f_install_main
+else
+	echo "$blu If this is helpful, please consider making a donation at"
+	echo "$red 0x5B23d5c12BF6a3C016b6A92C0Ca319F14998f3D8$def"
+	echo "$bol I wrote this script for you... as I have only one node!  dont have enough TNT to spawn more ;)$def"
+	m_main_menu
+fi

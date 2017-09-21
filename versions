@@ -17,3 +17,6 @@
 #0.14  Stats now live thanks to Collin Tulloch
 #0.15  Corrected stats for multiple nodes, and separated option file!
 #0.16  Wrote base for node autoinstall - will test when donations allow me to open a second node
+#0.17  Merged two commits from nymd: thank you for testing and submitting!
+#0.18  Included install in menu and install parameter to start install without going through menu
+#0.19  Added function to backup private keys
