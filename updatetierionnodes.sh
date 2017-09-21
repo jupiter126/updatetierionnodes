@@ -125,7 +125,7 @@ do
 	#local whichpoint; whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
 	local whichpoint; whichpoint="a"
 #	local state; state=$(ssh $user@$nodeaddress "$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')")
-	local state; state=$(ssh $user@$nodeaddress 'wget -q https://a.chainpoint.org/nodes/0x000d97cd484dE5D114434Dc7042587787fb6cFC0 -O index.html && if [[ "$(cat index.html|grep RateLimited)" != "" ]];then cat index.html|grep RateLimited; else cat index.html |cut -f1 -d}|grep -o true | wc -w|tr -d " ";fi')
+	local state; state=$(ssh $user@$nodeaddress 'wget -q https://a.chainpoint.org/nodes/$nodeethadd -O index.html && if [[ "$(cat index.html|grep RateLimited)" != "" ]];then cat index.html|grep RateLimited; else cat index.html |cut -f1 -d}|grep -o true | wc -w|tr -d " ";fi')
 	local nodestate
 	if [[ "$state" = "4" ]]; then
 		nodestate="$gre$state$def"
