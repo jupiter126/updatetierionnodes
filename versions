@@ -25,3 +25,4 @@
 #0.22  Corrected bug caused by https://stellartoken.com/tnt_node_stats page change
 #0.23  Replaced shuf by sort -R to remove an OSX dependency
 #0.24  Added parallel node installation processing: UNTESTED!
+#0.25  Sort didn't help, so I went to /dev/urandom

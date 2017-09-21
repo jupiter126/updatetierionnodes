@@ -64,7 +64,7 @@ nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .
 }
 
 function f_get_node_state {
-whichpoint=$(printf "%s\n" {a..c} |sort -R|head -n1)
+whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
 state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
 if [[ "$state" = "4" ]]; then
 	nodestate="$gre$state$def"
@@ -121,7 +121,7 @@ for nodeaddress in "${lines[@]}"
 do
 	sem -j+0
 	local nodeethadd; nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
-	local whichpoint; whichpoint=$(printf "%s\n" {a..c} |sort -R|head -n1)
+	local whichpoint; whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
 	local state; state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
 	local nodestate
 	if [[ "$state" = "4" ]]; then
