@@ -63,11 +63,9 @@ function f_get_node_eth_add {
 nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
 }
 
-whichpoint="a"
 function f_get_node_state {
+whichpoint=$(printf "%s\n" {a..c} | shuf|head -n1)
 state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
-if [[ "$whichpoint" = "a" ]]; then whichpoint="b"; elif [[ "$whichpoint" = "b" ]]; then whichpoint="c"; elif [[ "$whichpoint" = "c" ]]; then whichpoint="a"; fi
-
 if [[ "$state" = "4" ]]; then
 	nodestate="$gre$state$def"
 else
@@ -84,7 +82,8 @@ fi
 
 function f_stats {
 if [[ "$bcisthere" = "1" ]]; then
-	totalnodecount="$(curl -s https://stellartoken.com/tnt_node_stats|grep 'our best guess'|cut -f4 -d\<|sed 's/b>//')"
+	totalnodecount="$(curl -s https://stellartoken.com/tnt_node_stats|grep nodes|grep h2|cut -f3 -d\<|sed 's/b>//')"
+#	totalnodecount="3048"
 	nodecount="$(cat nodelist.txt |wc -l|tr -d ' ')"
 	prova=$(echo 'scale=5;'"1/$totalnodecount*48*100"|bc)
 	winstat=$(echo 'scale=2;'"$nodecount*$prova"|bc)
@@ -94,7 +93,7 @@ if [[ "$bcisthere" = "1" ]]; then
 fi
 }
 
-function f_list_nodes {
+function f_slow_list_nodes {
 IFS=$'\n' read -d '' -r -a lines < nodelist.txt
 for nodeaddress in "${lines[@]}"
 do
@@ -114,6 +113,58 @@ do
 	echo "Node $bol$nodeaddress$def has $blu$credits$def credits  -  state = $nodestate$updatednode"
 	f_reset_nodeaddress
 done
+}
+
+function f_fast_list_nodes {
+IFS=$'\n' read -d '' -r -a lines < nodelist.txt
+for nodeaddress in "${lines[@]}"
+do
+	sem -j+0
+	local nodeethadd; nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
+	local whichpoint; whichpoint=$(printf "%s\n" {a..c} | shuf|head -n1)
+	local state; state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
+	local nodestate
+	if [[ "$state" = "4" ]]; then
+		nodestate="$gre$state$def"
+	else
+		local nodestate="$red$state$def"
+	fi
+	if [[ "$state" != "4" && "$updatefailingnodes" = "1" ]]; then
+	f_update_node
+	local updatednode; updatenode="  - $red Node has just been updated$def"
+	fi
+        local credit; credits=""; credits="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+        if [[ "$credits" = "" ]]; then
+                if [[ "$spendmode" = "1" ]]; then
+			chp submit -s http://$nodeaddress $(echo -n tierionstatus | shasum -a 256 | awk '{print toupper($1)}') && sleep 1
+                        credits="$(ssh $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")"
+                else
+                        credits="na"
+                fi
+        fi
+	echo "Node $bol$nodeaddress$def has $blu$credits$def credits  -  state = $nodestate$updatednode"
+done
+sem --wait
+}
+
+function f_parasem {
+#if ! type "$sem" > /dev/null; then
+if [[ "$(command -v sem)" != "" ]]; then
+	echo "parallel is installed - using fast mode"
+	parasem="1"
+else
+	echo "parallel is not installed - installing slow mode"
+	parasem="0"
+fi
+}
+
+function f_list_nodes {
+f_parasem
+if [[ "$parasem" = "1" ]]; then
+	f_fast_list_nodes
+else
+	f_slow_list_nodes
+fi
 f_stats
 }
 
@@ -297,3 +348,10 @@ else
 	echo "$bol I wrote this script for you... as I have only one node!  dont have enough TNT to spawn more ;)$def"
 	m_main_menu
 fi
+
+
+
+
+###### Experimental code below
+
+
