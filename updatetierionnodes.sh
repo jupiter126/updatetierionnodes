@@ -64,7 +64,8 @@ nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .
 }
 
 function f_get_node_state {
-whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
+#whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
+whichpoint="a"
 state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
 if [[ "$state" = "4" ]]; then
 	nodestate="$gre$state$def"
@@ -119,17 +120,19 @@ function f_fast_list_nodes {
 IFS=$'\n' read -d '' -r -a lines < nodelist.txt
 for nodeaddress in "${lines[@]}"
 do
-	sem -j+0
-	local nodeethadd; nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
-	local whichpoint; whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
-	local state; state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
+	sem -j +0
+	local nodeethadd; nodeethadd=$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")
+	#local whichpoint; whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
+	local whichpoint; whichpoint="a"
+#	local state; state=$(ssh $user@$nodeaddress "$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')")
+	local state; state=$(ssh $user@$nodeaddress 'wget -q https://a.chainpoint.org/nodes/0x000d97cd484dE5D114434Dc7042587787fb6cFC0 -O index.html && if [[ "$(cat index.html|grep RateLimited)" != "" ]];then cat index.html|grep RateLimited; else cat index.html |cut -f1 -d}|grep -o true | wc -w|tr -d " ";fi')
 	local nodestate
 	if [[ "$state" = "4" ]]; then
 		nodestate="$gre$state$def"
 	else
-		local nodestate="$red$state$def"
+		nodestate="$red$state$def"
 	fi
-	if [[ "$state" != "4" && "$updatefailingnodes" = "1" ]]; then
+	if [[ "$state" != "4" && "$updatefailingnodes" = "1" && "$state" != "RateLimited" ]]; then
 	f_update_node
 	local updatednode; updatenode="  - $red Node has just been updated$def"
 	fi
@@ -255,7 +258,7 @@ do
 	if [[ "$(grep $nodeethadd privatekeys.txt)" = "" ]]; then
 		privkey=$(ssh $user@$nodeaddress "cd chainpoint-node && docker-compose logs -t | grep 'back me up'|cut -f4 -d:|tr -d ' '")
 		if [[ "$privkey" != "" ]]; then
-			echo "$nodeethadd  -  $privkey">>privatekeys.txt
+			echo "$nodeethadd,$privkey"|tee -a privatekeys.txt
 		else
 			echo "$red There was an issue backupping $nodeaddress private key"
 		fi
@@ -274,7 +277,7 @@ echo "$nodeip">>nodelist.txt
 function f_install_nodes_fast {
 mapfile -t nodes<installnodes.txt
 for node in "${nodes[@]}"; do
-	sem -j+0
+	sem -j +0
 	local nodeip; local nodeethdaddress;local noderootpass
 	IFS=, read nodeip nodeethdaddress noderootpass <<< $node
 	echo "$noderootpass">noderootpass.txt
