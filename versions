@@ -20,3 +20,4 @@
 #0.17  Merged two commits from nymd: thank you for testing and submitting!
 #0.18  Included install in menu and install parameter to start install without going through menu
 #0.19  Added function to backup private keys
+#0.20  Added sequential order for chainpoint requests load balance between a.chainpoint.org,b.chainpoint.org,c.chainpoint.org

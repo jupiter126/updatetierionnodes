@@ -63,9 +63,10 @@ function f_get_node_eth_add {
 nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
 }
 
+whichpoint="a"
 function f_get_node_state {
-#state="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|sed 's/true/true\n/g'|grep -c 'true')"
-state="$(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
+state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
+if [[ "$whichpoint" = "a" ]]; then whichpoint=b; elif [[ "$whichpoint" = "b" ]]; then whichpoint=c; elif[[ "$whichpoint" = "c" ]]; then whichpoint=a;fi
 if [[ "$state" = "4" ]]; then
 	nodestate="$gre$state$def"
 else
