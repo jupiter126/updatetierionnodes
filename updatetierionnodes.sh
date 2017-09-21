@@ -55,7 +55,7 @@ nodeaddress="";nodeethadd="";updatednode="";nodestate="";state=""
 
 #if you don't have ssh keys setup, generate some
 if [[ ! -f ~/.ssh/id_rsa ]]; then
-	echo "generating some ssh keys, this might take some time... Please press enter 3 times when asked questions"
+	echo "generating some ssh keys, this might take some time...$red Please press enter 3 times when asked questions$def"
 	ssh-keygen -t rsa -b 8192
 fi
 
@@ -224,7 +224,46 @@ else
 	m_main_menu
 fi
 
+function f_install_nodes {
+mapfile -t nodes<installnodes.txt
 
+for node in "${nodes[@]}"; do
+	IFS=, read nodeip nodeethdaddress noderootpass <<< $node
+	echo "$noderootpass">noderootpass.txt
+	f_install_node
+done
+}
 
+function f_install_node {
+sshpass -f noderootpass.txt ssh root@$nodeip "apt-get install docker docker-composed && useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/ /etc/ssh/sshd_config"
+sshpass -f userpass.txt ssh-copy-id $user@$nodeip
+sshpass -f userpass.txt ssh $user@$nodeip "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=$nodeip/g' .env && make up"
+echo "$nodeip">>nodelist.txt
+}
 
+function f_install_main {
+echo "$red Note that you should: 1. Create ethereum address(es), 2. Install and start node(s), 3. Send some TNT to the address(es):$bol IN THAT SPECIFIC ORDER OF ACTION$def"
+#requires sshpass and shred
+for requirements in sshpass shred; do
+	command -v $requirements >/dev/null 2>&1 || { echo >&2 "node installer requires $requirements, please install"; exit 1; }
+done
 
+echo "Please enter desired user password"
+read userpass
+echo "$userpass">userpass.txt
+
+if [[ -f installnodes.txt ]]; then
+	f_install_nodes
+else
+	echo "Please enter node root password"
+	read noderootpass
+	echo "$noderootpass">noderootpass.txt
+	echo "Please enter node ip"
+	read nodeip
+	echo "Please enter ethereum address"
+	read nodeethadd
+	f_install_node
+fi
+shred -u -n 10 userpass.txt
+shred -u -n 10 noderootpass.txt
+}

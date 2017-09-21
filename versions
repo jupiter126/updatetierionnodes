@@ -14,3 +14,4 @@
 #0.13  Added Stats
 #0.14  Stats now live thanks to Collin Tulloch
 #0.15  Corrected stats for multiple nodes, and separated option file!
+#0.16  Wrote base for node autoinstall - will test when donations allow me to open a second node
