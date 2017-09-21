@@ -64,7 +64,7 @@ nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .
 }
 
 function f_get_node_state {
-whichpoint=$(printf "%s\n" {a..c} | shuf|head -n1)
+whichpoint=$(printf "%s\n" {a..c} |sort -R|head -n1)
 state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
 if [[ "$state" = "4" ]]; then
 	nodestate="$gre$state$def"
@@ -121,7 +121,7 @@ for nodeaddress in "${lines[@]}"
 do
 	sem -j+0
 	local nodeethadd; nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
-	local whichpoint; whichpoint=$(printf "%s\n" {a..c} | shuf|head -n1)
+	local whichpoint; whichpoint=$(printf "%s\n" {a..c} |sort -R|head -n1)
 	local state; state="$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')"
 	local nodestate
 	if [[ "$state" = "4" ]]; then
@@ -244,56 +244,6 @@ do
 done
 }
 
-function f_install_nodes {
-mapfile -t nodes<installnodes.txt
-for node in "${nodes[@]}"; do
-	IFS=, read nodeip nodeethdaddress noderootpass <<< $node
-	echo "$noderootpass">noderootpass.txt
-	f_install_node
-done
-}
-
-function f_install_node {
-ssh-keyscan $nodeip >> ~/.ssh/known_hosts
-sshpass -f noderootpass.txt ssh root@$nodeip "apt-get install docker docker-composed && useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/ /etc/ssh/sshd_config"
-sshpass -f userpass.txt ssh-copy-id $user@$nodeip
-sshpass -f userpass.txt ssh $user@$nodeip "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeip/g' .env && make up"
-echo "$nodeip">>nodelist.txt
-}
-
-function f_install_main {
-echo "$red Note that you should: 1. Create ethereum address(es), 2. Install and start node(s), 3. Send some TNT to the address(es):$bol IN THAT SPECIFIC ORDER OF ACTION$def"
-if [[ ! -f installnodes.txt ]]; then
-	echo "$gre For autoinstall of multiple nodes, please create a "installnodes.txt" with one line per node in the following format:$bol nodeip,nodeethaddress,rootpassword$red -  press y to edit list now$def."
-	read iwantmany
-	if [[ "$iwantmany" = "y" ]]; then
-		$EDITOR installnodes.txt
-	fi
-fi
-#requires sshpass and shred
-for requirements in sshpass shred; do
-	command -v $requirements >/dev/null 2>&1 || { echo >&2 "node installer requires $requirements, please install"; exit 1; }
-done
-
-echo "Please enter desired user password"
-read userpass
-echo "$userpass">userpass.txt
-
-if [[ -f installnodes.txt ]]; then
-	f_install_nodes
-else
-	echo "Please enter node root password"
-	read noderootpass
-	echo "$noderootpass">noderootpass.txt
-	echo "Please enter node ip"
-	read nodeip
-	echo "Please enter ethereum address"
-	read nodeethadd
-	f_install_node
-fi
-shred -u -n 10 userpass.txt noderootpass.txt installnodes.txt
-}
-
 function f_backupprivatekeys {
 if [[ ! -f privatekeys.txt ]]; then
 	touch privatekeys.txt
@@ -311,6 +261,84 @@ do
 		fi
 	fi
 done
+}
+
+function f_install_node {
+ssh-keyscan $nodeip >> ~/.ssh/known_hosts
+sshpass -f noderootpass.txt ssh root@$nodeip "apt-get install docker docker-composed && useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/ /etc/ssh/sshd_config"
+sshpass -f userpass.txt ssh-copy-id $user@$nodeip
+sshpass -f userpass.txt ssh $user@$nodeip "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeip/g' .env && make up"
+echo "$nodeip">>nodelist.txt
+}
+
+function f_install_nodes_fast {
+mapfile -t nodes<installnodes.txt
+for node in "${nodes[@]}"; do
+	sem -j+0
+	local nodeip; local nodeethdaddress;local noderootpass
+	IFS=, read nodeip nodeethdaddress noderootpass <<< $node
+	echo "$noderootpass">noderootpass.txt
+	ssh-keyscan $nodeip >> ~/.ssh/known_hosts
+	sshpass -f noderootpass.txt ssh root@$nodeip "apt-get install docker docker-composed && useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/ /etc/ssh/sshd_config"
+	sshpass -f userpass.txt ssh-copy-id $user@$nodeip
+	sshpass -f userpass.txt ssh $user@$nodeip "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeip/g' .env && make up"
+	echo "$nodeip">>nodelist.txt
+done
+sem --wait
+}
+
+function f_install_nodes_slow {
+mapfile -t nodes<installnodes.txt
+for node in "${nodes[@]}"; do
+	IFS=, read nodeip nodeethdaddress noderootpass <<< $node
+	echo "$noderootpass">noderootpass.txt
+	f_install_node
+done
+}
+
+function f_install_nodes {
+	f_parasem
+	if [[ "$parasem" = "1" ]]; then
+		echo "$redfast mode untested; type y to try it, and please report results - type something else to use slow mode$def!!!"
+		read fastorslow
+		if [[ "$fastorslow" = "y" ]]; then
+	        	f_install_nodes_fast
+		else
+		        f_install_nodes_slow
+		fi
+	else
+	        f_install_nodes_slow
+	fi
+}
+
+function f_install_main {
+echo "$red Note that you should: 1. Create ethereum address(es), 2. Install and start node(s), 3. Send some TNT to the address(es):$bol IN THAT SPECIFIC ORDER OF ACTION$def"
+if [[ ! -f installnodes.txt ]]; then
+	echo "$gre For autoinstall of multiple nodes, please create a "installnodes.txt" with one line per node in the following format:$bol nodeip,nodeethaddress,rootpassword$red -  press y to edit list now$def."
+	read iwantmany
+	if [[ "$iwantmany" = "y" ]]; then
+		$EDITOR installnodes.txt
+	fi
+fi
+for requirements in sshpass shred; do #requires sshpass and shred
+	command -v $requirements >/dev/null 2>&1 || { echo >&2 "node installer requires $requirements, please install"; exit 1; }
+done
+echo "Please enter desired user password"
+read userpass
+echo "$userpass">userpass.txt
+if [[ -f installnodes.txt ]]; then
+	f_install_nodes
+else
+	echo "Please enter node root password"
+	read noderootpass
+	echo "$noderootpass">noderootpass.txt
+	echo "Please enter node ip"
+	read nodeip
+	echo "Please enter ethereum address"
+	read nodeethadd
+	f_install_node
+fi
+shred -u -n 10 userpass.txt noderootpass.txt installnodes.txt
 }
 
 function m_main_menu {
@@ -354,4 +382,12 @@ fi
 
 ###### Experimental code below
 
-
+#oldcode - backup
+#function f_install_nodes {
+#mapfile -t nodes<installnodes.txt
+#for node in "${nodes[@]}"; do
+#	IFS=, read nodeip nodeethdaddress noderootpass <<< $node
+#	echo "$noderootpass">noderootpass.txt
+#	f_install_node
+#done
+#}
