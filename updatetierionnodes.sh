@@ -65,7 +65,7 @@ nodeethadd="$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .
 
 function f_get_node_state {
 whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
-state=$(ssh $user@$nodeaddress "curl $whichnode.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')")
+state=$(ssh $user@$nodeaddress "curl -s $whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' '")
 if [[ "$state" = "4" ]]; then
 	nodestate="$gre$state$def"
 else
@@ -123,7 +123,8 @@ do
 	local nodeethadd; nodeethadd=$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")
 	local whichpoint; whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
 	#local whichpoint; whichpoint="a"
-	local state; state=$(ssh $user@$nodeaddress "curl $whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')")
+	local state; state=$(ssh $user@$nodeaddress "curl -s $whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' '")
+
 	#local state; state=$(ssh $user@$nodeaddress 'wget -q https://$(cat /dev/urandom| tr -dc 'a-c'|head -c 1).chainpoint.org/nodes/$nodeethadd -O index.html && if [[ "$(cat index.html|grep RateLimited)" != "" ]];then cat index.html|grep RateLimited; else cat index.html |cut -f1 -d}|grep -o true | wc -w|tr -d " ";fi')
 	local nodestate
 	if [[ "$state" = "4" ]]; then
