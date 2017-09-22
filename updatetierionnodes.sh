@@ -124,8 +124,8 @@ do
 	local nodeethadd; nodeethadd=$(ssh -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")
 	#local whichpoint; whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
 	local whichpoint; whichpoint="a"
-#	local state; state=$(ssh $user@$nodeaddress "$(curl -s https://$whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')")
-	local state; state=$(ssh $user@$nodeaddress 'wget -q https://a.chainpoint.org/nodes/$nodeethadd -O index.html && if [[ "$(cat index.html|grep RateLimited)" != "" ]];then cat index.html|grep RateLimited; else cat index.html |cut -f1 -d}|grep -o true | wc -w|tr -d " ";fi')
+	local state; state=$(ssh $user@$nodeaddress "echo $(curl -s https://a.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' ')")
+	#local state; state=$(ssh $user@$nodeaddress 'wget -q https://a.chainpoint.org/nodes/$nodeethadd -O index.html && if [[ "$(cat index.html|grep RateLimited)" != "" ]];then cat index.html|grep RateLimited; else cat index.html |cut -f1 -d}|grep -o true | wc -w|tr -d " ";fi')
 	local nodestate
 	if [[ "$state" = "4" ]]; then
 		nodestate="$gre$state$def"
@@ -382,8 +382,11 @@ fi
 
 
 
-
 ###### Experimental code below
+
+function solve_error_137 {
+ssh $user@$host "sudo bash -c 'fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab'"
+}
 
 #oldcode - backup
 #function f_install_nodes {
