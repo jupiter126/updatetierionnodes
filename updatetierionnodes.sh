@@ -248,7 +248,9 @@ done
 }
 
 function f_solve_error_137 {
-ssh $user@$host "sudo bash -c 'fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab'"
+#ssh 'if [[ ! -f /swapfile ]]; then frspace=$(df | grep "/$"| awk '{ print $4 }'|tr -d ' ')&&if [[ "$frspace" -gt "6000000" ]]; then if [[ "$(whoami)" = "root" ]]; then fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab;else sudo bash -c 'fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab';fi;else echo "Disk space on / too low to create swap partition"; fi; else echo "swapfile already exists";fi'
+
+ssh $user@$host "sudo bash -c 'fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab'"
 }
 
 function m_solve_error_137 {
