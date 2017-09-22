@@ -247,6 +247,26 @@ do
 done
 }
 
+function f_solve_error_137 {
+ssh $user@$host "sudo bash -c 'fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab'"
+}
+
+function m_solve_error_137 {
+echo "Type 1 to correct error on one node, and a to correct error on all nodes"
+read oneorall
+if [[ "$oneorall" = "1" ]]; then
+	echo "Please enter the IP of the node"
+	read $host
+	f_solve_error_137
+elif [[ "$oneorall" = "a" ]];then
+	IFS=$'\n' read -d '' -r -a lines < nodelist.txt
+	for host in "${lines[@]}"
+	do
+		f_solve_error_137
+	done
+fi
+}
+
 function f_backupprivatekeys {
 if [[ ! -f privatekeys.txt ]]; then
 	touch privatekeys.txt
@@ -348,7 +368,7 @@ function m_main_menu {
 while [ 1 ]
 do
 	PS3='Choose a number: '
-	select choix in "listnodes" "addnode" "delnode" "updatenode" "updateall" "startnode" "stopnode" "installnodes" "backupprivkeys" "quit"
+	select choix in "listnodes" "addnode" "delnode" "updatenode" "updateall" "startnode" "stopnode" "installnodes" "backupprivkeys" "solve_error_137" "quit"
 	do
 		break
 	done
@@ -362,6 +382,7 @@ do
 		stopnode)	f_stop_node && f_reset_nodeaddress;;
 		installnodes)	f_install_main;;
 		backupprivkeys)	f_backupprivatekeys;;
+		solveerror137)	m_solve_error_137;;
 		quit)		exit ;;
 		*)		echo "nope" ;;
 	esac
@@ -383,10 +404,6 @@ fi
 
 
 ###### Experimental code below
-
-function solve_error_137 {
-ssh $user@$host "sudo bash -c 'fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab'"
-}
 
 #oldcode - backup
 #function f_install_nodes {

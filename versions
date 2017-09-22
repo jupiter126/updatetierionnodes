@@ -27,3 +27,4 @@
 #0.24  Added parallel node installation processing: UNTESTED!
 #0.25  Sort didn't help, so I went to /dev/urandom
 #0.26  Corrected a bug from a previous version
+#0.27  Added function to correct error 137
