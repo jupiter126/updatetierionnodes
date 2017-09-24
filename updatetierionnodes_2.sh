@@ -336,7 +336,7 @@ done
 function f_install_node { # used to install a node
 ssh-keyscan -p $sshport $nodeaddress >> ~/.ssh/known_hosts
 if [[ "$user" != "root" ]];then
-        sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/ /etc/ssh/sshd_config"
+        sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config"
         sshpass -f "$directory/userpass.txt" ssh-copy-id -i $sshkey -p $sshport $user@$nodeaddress
 fi
 sshpass -f "$directory/userpass.txt" ssh -p $sshport -i $sshkey $user@$nodeaddress "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' .env && make up"
@@ -351,6 +351,10 @@ for node in "${nodes[@]}"; do
 	IFS=, read nodeaddress nodeethdaddress noderootpass sshport<<< $node
 	echo "$noderootpass">"$directory/noderootpass.txt"
 	ssh-keyscan $nodeaddress >> ~/.ssh/known_hosts
+#	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get update"
+#	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y upgrade"
+#	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
+#	sleep 60
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y install docker docker-compose"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "fallocate -l 2G /swapfile"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "chmod 600 /swapfile"
