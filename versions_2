@@ -35,3 +35,4 @@
 #	Added option for a different ssh port on each node
 #	Added option to use a different ssh key than the system one
 #0.31	Fixed fast create nodes
+#0.32	Temporarily disabled fast mode in install, it contained a running condition

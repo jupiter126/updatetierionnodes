@@ -365,11 +365,11 @@ for node in "${nodes[@]}"; do
 	sleep 2
 	sshpass -f "$directory/userpass.txt" ssh-copy-id -i "$sshkey" -p $sshport $user@$nodeaddress
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh"
-	ssh -p $sshport -i $sshkey $user@$nodeaddress "chmod +x docker-install-ubuntu.sh"	
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "chmod +x docker-install-ubuntu.sh"
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "./docker-install-ubuntu.sh"
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "rm docker-install-ubuntu.sh"
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' chainpoint-node/.env"
-	ssh -p $sshport -i $sshkey $user@$nodeaddress "cd chainpoint-node && make up"	
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "cd chainpoint-node && make up"
 	echo "$nodeaddress">>"$directory/nodelist.txt"
 done
 #sem --wait
@@ -392,10 +392,12 @@ function f_install_nodes {
 		if [[ "$fastorslow" = "y" ]]; then
 	        	f_install_nodes_fast
 		else
-		        f_install_nodes_slow
+#		        f_install_nodes_slow
+			f_install_nodes_fast
 		fi
 	else
-	        f_install_nodes_slow
+		f_install_nodes_fast
+		#f_install_nodes_slow
 	fi
 }
 
