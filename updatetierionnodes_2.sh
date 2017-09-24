@@ -363,6 +363,7 @@ for node in "${nodes[@]}"; do
 #	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
 #	sleep 60
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y install docker docker-compose"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "groupadd docker"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "fallocate -l 2G /swapfile"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "chmod 600 /swapfile"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "mkswap /swapfile"
