@@ -351,7 +351,13 @@ for node in "${nodes[@]}"; do
 	local nodeaddress; local nodeethdaddress;local noderootpass; local sshport
 	IFS=, read nodeaddress nodeethdaddress noderootpass sshport<<< $node
 	echo "$noderootpass">"$directory/noderootpass.txt"
-	ssh-keyscan $nodeaddress >> ~/.ssh/known_hosts
+	if [[ ! -d .ssh ]]; then
+		mkdir .ssh
+	fi
+	if [[ ! -f .ssh/known_hosts ]]; then
+		touch ".ssh/known_hosts"
+	fi
+	ssh-keyscan -p $sshport $nodeaddress >> ~/.ssh/known_hosts
 #	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get update"
 #	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y upgrade"
 #	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
