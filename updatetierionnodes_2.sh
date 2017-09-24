@@ -368,7 +368,7 @@ for node in "${nodes[@]}"; do
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "chmod 600 /swapfile"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "mkswap /swapfile"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "swapon /swapfile"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo '/swapfile none swap sw 0 0' » /etc/fstab"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo '/swapfile none swap sw 0 0' >> /etc/fstab"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo $user:$userpass | chpasswd"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo \"$user ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers"
