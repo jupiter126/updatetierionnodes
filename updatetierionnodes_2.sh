@@ -370,7 +370,7 @@ for node in "${nodes[@]}"; do
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "rm docker-install-ubuntu.sh"
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' chainpoint-node/.env"
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "cd chainpoint-node && make up"
-	echo "$nodeaddress">>"$directory/nodelist.txt"
+	echo "$nodeaddress,$sshport">>"$directory/nodelist.txt"
 done
 #sem --wait
 }
