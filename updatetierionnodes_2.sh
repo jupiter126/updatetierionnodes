@@ -358,10 +358,10 @@ for node in "${nodes[@]}"; do
 		touch ".ssh/known_hosts"
 	fi
 	ssh-keyscan -p $sshport $nodeaddress >> ~/.ssh/known_hosts
-#	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get update"
-#	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y upgrade"
-#	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
-#	sleep 60
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get update"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y upgrade"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
+	sleep 60
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y install docker docker-compose"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "groupadd docker"
 	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "fallocate -l 2G /swapfile"
