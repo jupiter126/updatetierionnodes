@@ -34,3 +34,4 @@
 #	Added $directory variable and a lot of quotes
 #	Added option for a different ssh port on each node
 #	Added option to use a different ssh key than the system one
+#0.31	Fixed fast create nodes

@@ -226,10 +226,10 @@ cat "$directory/nodelist.txt"
 if [[ "$nodeaddress" = "" ]]; then
 	echo "Please give the address of the node you want to stop"
 	read nodeaddress
-	nodeport=$(grep "$nodeaddress" "$directory/nodelist.txt" |cut -f2 -d,)
+	sshport=$(grep "$nodeaddress" "$directory/nodelist.txt" |cut -f2 -d,)
 fi
 if [[ "$nodeaddress" != "" ]]; then
-	ssh -p $nodeport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && make down"
+	ssh -p $sshport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && make down"
 fi
 }
 
@@ -238,10 +238,10 @@ cat "$directory/nodelist.txt"
 if [[ "$nodeaddress" = "" ]]; then
 	echo "Please give the address of the node you want to start"
 	read nodeaddress
-	nodeport=$(grep 5 "$directory/nodelist.txt" |cut -f2 -d,)
+	sshport=$(grep 5 "$directory/nodelist.txt" |cut -f2 -d,)
 fi
 if [[ "$nodeaddress" != "" ]]; then
-	ssh -p $nodeport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && make up"
+	ssh -p $sshport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && make up"
 fi
 }
 
@@ -253,14 +253,14 @@ if [[ "$nodeaddress" = "" ]]; then
 fi
 if [[ "$nodeaddress" != "" ]]; then
 	echo "updating $nodeaddress"
-	ssh -p $nodeport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && nstatus=\"$(git pull|head -n1|grep Already)\" && if [[ \"$nstatus\" != \"\" ]];then make down && make up; fi"
+	ssh -p $sshport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && nstatus=\"$(git pull|head -n1|grep Already)\" && if [[ \"$nstatus\" != \"\" ]];then make down && make up; fi"
 fi
 }
 
 function f_update_nodes { # update all nodes
 mapfile -t nodes<"$directory/nodelist.txt"
 for node in "${nodes[@]}"; do
-	IFS=, read nodeaddress nodeport <<< $node
+	IFS=, read nodeaddress sshport <<< $node
 	f_update_node
 done
 }
@@ -293,7 +293,7 @@ if [[ ! -f "$directory/error137.sh" ]]; then
 	sed -i '/\/swapfile none swap sw 0 0/{1!d}' /etc/fstab
 EOF
 fi
-scp -P $nodeport error137.sh $user@$nodeaddress:~/error137.sh
+scp -P $sshport error137.sh $user@$nodeaddress:~/error137.sh
 ssh -p $sshport -i $sshkey $user@$nodeaddress "sudo bash -c 'chmod +x error137.sh && ./error137.sh'"
 }
 
@@ -303,12 +303,12 @@ read oneorall
 if [[ "$oneorall" = "1" ]]; then
 	echo "Please enter the IP of the node"
 	read $host
-	nodeport=$(grep "$nodeaddress" "$directory/nodelist.txt" |cut -f2 -d,)
+	sshport=$(grep "$nodeaddress" "$directory/nodelist.txt" |cut -f2 -d,)
 	f_solve_error_137
 elif [[ "$oneorall" = "a" ]];then
 	mapfile -t nodes<"$directory/nodelist.txt"
 	for node in "${nodes[@]}"; do
-		IFS=, read nodeaddress nodeport <<< $node
+		IFS=, read nodeaddress sshport <<< $node
 		f_solve_error_137
 	done
 fi
@@ -320,7 +320,7 @@ if [[ ! -f "$directory/privatekeys.txt" ]]; then
 fi
 mapfile -t nodes<"$directory/nodelist.txt"
 for node in "${nodes[@]}"; do
-	IFS=, read nodeaddress nodeport <<< $node
+	IFS=, read nodeaddress sshport <<< $node
 	f_get_node_eth_add
 	if [[ "$(grep "$nodeethadd" "$directory/privatekeys.txt")" = "" ]]; then
 		privkey=$(ssh -p $sshport -i $sshkey -n $user@$nodeaddress "cd chainpoint-node && docker-compose logs -t | grep 'back me up'|cut -f4 -d:|tr -d ' '")
@@ -334,35 +334,51 @@ done
 }
 
 function f_install_node { # used to install a node
-ssh-keyscan -p $nodeport $nodeaddress >> ~/.ssh/known_hosts
+ssh-keyscan -p $sshport $nodeaddress >> ~/.ssh/known_hosts
 if [[ "$user" != "root" ]];then
         sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/ /etc/ssh/sshd_config"
-        sshpass -f "$directory/userpass.txt" ssh-copy-id -p $sshport $user@$nodeaddress
+        sshpass -f "$directory/userpass.txt" ssh-copy-id -i $sshkey -p $sshport $user@$nodeaddress
 fi
-sshpass -f "$directory/userpass.txt" ssh $user@$nodeaddress "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' .env && make up"
+sshpass -f "$directory/userpass.txt" ssh -p $sshport -i $sshkey $user@$nodeaddress "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' .env && make up"
 echo "$nodeaddress">>"$directory/nodelist.txt"
 }
 
 function f_install_nodes_fast { # installs a batch of nodes at once in parallel
 mapfile -t nodes<"$directory/installnodes.txt"
 for node in "${nodes[@]}"; do
-	sem -j +0
-	local nodeaddress; local nodeethdaddress;local noderootpass
-	IFS=, read nodeaddress nodeethdaddress noderootpass <<< $node
+#	sem -j +0
+	local nodeaddress; local nodeethdaddress;local noderootpass; local sshport
+	IFS=, read nodeaddress nodeethdaddress noderootpass sshport<<< $node
 	echo "$noderootpass">"$directory/noderootpass.txt"
 	ssh-keyscan $nodeaddress >> ~/.ssh/known_hosts
-	sshpass -f "$directory/noderootpass.txt" ssh root@$nodeaddress "apt-get install docker docker-composed && useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/ /etc/ssh/sshd_config"
-	sshpass -f "$directory/userpass.txt" ssh-copy-id -i "$sshkey" $user@$nodeaddress
-	sshpass -f "$directory/userpass.txt" ssh -p $sshport -i $sshkey -n $user@$nodeaddress "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh && chmod +x docker-install-ubuntu.sh && ./docker-install-ubuntu.sh && rm docker-install-ubuntu.sh && cd chainpoint-node && sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' .env && make up"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y install docker docker-compose"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "fallocate -l 2G /swapfile"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "chmod 600 /swapfile"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "mkswap /swapfile"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "swapon /swapfile"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo '/swapfile none swap sw 0 0' » /etc/fstab"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo $user:$userpass | chpasswd"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo \"$user ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config"
+	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "service ssh restart"
+	sleep 2
+	sshpass -f "$directory/userpass.txt" ssh-copy-id -i "$sshkey" -p $sshport $user@$nodeaddress
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh"
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "chmod +x docker-install-ubuntu.sh"	
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "./docker-install-ubuntu.sh"
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "rm docker-install-ubuntu.sh"
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' chainpoint-node/.env"
+	ssh -p $sshport -i $sshkey $user@$nodeaddress "cd chainpoint-node && make up"	
 	echo "$nodeaddress">>"$directory/nodelist.txt"
 done
-sem --wait
+#sem --wait
 }
 
 function f_install_nodes_slow { # installs a batch of nodes at once in series
 mapfile -t nodes<"$directory/installnodes.txt"
 for node in "${nodes[@]}"; do
-	IFS=, read nodeaddress nodeethdaddress noderootpass <<< $node
+	IFS=, read nodeaddress nodeethdaddress noderootpass sshport<<< $node
 	echo "$noderootpass">"$directory/noderootpass.txt"
 	f_install_node
 done
