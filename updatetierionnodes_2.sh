@@ -487,5 +487,9 @@ else
 	echo "$red It is probably better to quit and use the normal version"
 	echo "             !!! YOU HAVE BEEN WARNED !!! $def "
 	echo " "
+	echo "$bol tieron update: https://medium.com/tierion/tierion-network-update-september-24-6242fdb30111$def"
+	echo "$cya IT IS TEMPORARILY REQUIRED BY NETWORK THAT OPERATORS DISABLE ALL NODES BUT ONE -$mag REWARDS DISABLED$def"
+        echo " "
+
 	m_main_menu
 fi
