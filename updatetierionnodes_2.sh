@@ -406,8 +406,8 @@ for node in "${nodes[@]}"; do
 	if [[ ! -d .ssh ]]; then
 		mkdir .ssh
 	fi
-	if [[ ! -f .ssh/known_hosts ]]; then
-		touch ".ssh/known_hosts"
+	if [[ ! -f ~/.ssh/known_hosts ]]; then
+		touch "~/.ssh/known_hosts"
 	fi
 	ssh-keyscan -p $sshport $nodeaddress >> ~/.ssh/known_hosts
 	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
