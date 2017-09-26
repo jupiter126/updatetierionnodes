@@ -398,7 +398,10 @@ fonction=f_update_node
 f_debug $fonction
 mapfile -t nodes<"$directory/installnodes.txt"
 for node in "${nodes[@]}"; do
-	sem -j +0
+	if [[ "$node" = "" ]]; then 
+		return 0
+	fi
+	sem -j +0 --no-notice
 	local nodeaddress; local nodeethdaddress;local noderootpass; local sshport
 	IFS=, read nodeaddress nodeethdaddress noderootpass sshport<<< $node
 	mkdir $directory/$nodeaddress
