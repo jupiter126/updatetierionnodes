@@ -23,9 +23,10 @@ if [[ ! -f "$directory/tntupdatesettings.sh" ]]; then #Settings: If they do not 
 	echo 'updatefailingnodes="1"	#if a node does not have a 4 nodestatus, update it' >> "$directory/tntupdatesettings.sh"
 	echo 'sshkey="id_rsa"  		# Generates and uses a new ssh key by default - edit to use existing key' >> "$directory/tntupdatesettings.sh"
 	echo 'sshport="22"			# Change if you use a different port, set "" if port depends on node' >> "$directory/tntupdatesettings.sh"
+	echo 'debug="0"				# Set on 1 for debug mode'
 	echo "$red To review all settings now, press Y - if you are happy with the defaults, press enter"
 	read editsettings
-	if [[ "$editsettings" = "" ]]; then
+	if [[ "$editsettings" = "Y" ]]; then
 		$EDITOR "$directory/tntupdatesettings.sh"
 	fi
 	source "$directory/tntupdatesettings.sh"
@@ -55,7 +56,15 @@ if [[ ! -f "$directory/nodelist.txt" ]]; then  #if listfile doesn't exist, we cr
 	touch "$directory/nodelist.txt"
 fi
 
+function f_debug { # Debug mode helps tracing where crashes occur (if $debug = 1) - must be declared soon
+if [ "$debug" = "1" ]; then
+	echo "$yel ## debug = $1" && echo "pwd = `pwd`$def"
+fi
+}
+
 function f_reset_nodeaddress { #resets node variables
+fonction=f_reset_nodeaddress
+f_debug $fonction
 nodeaddress="";nodeethadd="";updatednode="";nodestate="";state=""
 }
 
@@ -66,10 +75,14 @@ if [[ ! -f "$directory/$sshkey" ]]; then
 fi
 
 function f_get_node_eth_add { #gets ethereum address of a node
+fonction=f_get_node_eth_add
+f_debug $fonction
 nodeethadd="$(ssh -p $sshport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && grep NODE_TNT .env|cut -d= -f2")"
 }
 
 function f_get_node_state { #gets the state of a node
+fonction=f_get_node_state
+f_debug $fonction
 whichpoint=$(cat /dev/urandom| tr -dc 'a-c'|head -c 1)
 state=$(ssh -p $sshport -i $sshkey -n $user@$nodeaddress "curl -s $whichpoint.chainpoint.org/nodes/$nodeethadd|cut -d} -f1|grep -o true | wc -w|tr -d ' '")
 if [[ "$state" = "4" ]]; then
@@ -80,6 +93,8 @@ fi
 }
 
 function f_updatefailingnode { #updates a node that is failing
+fonction=f_updatefailingnode
+f_debug $fonction
 if [[ "$state" != "4" && "$updatefailingnodes" = "1" ]]; then
 	f_update_node
 	updatednode="  - $red Node has just been updated$def"
@@ -87,6 +102,8 @@ fi
 }
 
 function f_stats { #generates the stats
+fonction=f_stats
+f_debug $fonction
 if [[ "$bcisthere" = "1" ]]; then
 	totalnodecount="$(curl -s https://stellartoken.com/tnt_node_stats|grep nodes|grep h2|cut -f3 -d\<|sed 's/b>//')"
 	nodecount=$(cat "$directory/nodelist.txt" |wc -l|tr -d ' ')
@@ -99,14 +116,20 @@ fi
 }
 
 function f_getnodecredits { #get the nodes available credits
+fonction=f_getnodecredits
+f_debug $fonction
 credits=$(ssh -p $sshport -i $sshkey -n $user@$nodeaddress "cd ~/chainpoint-node && docker-compose logs -t | grep -i 'Credits'|tail -n 1|cut -f6 -d:|sed 's/ //'")
 }
 
 function f_chpsubmit { # triggers a chp submit request to the node
+fonction=f_chpsubmit
+f_debug $fonction
 chp submit -s http://$nodeaddress $(echo -n tierionstatus | shasum -a 256 | awk '{print toupper($1)}') && sleep 1
 }
 
 function f_parasem { # defines if using slow or fast mode depending on availability of sem
+fonction=f_parasem
+f_debug $fonction
 if [[ "$(command -v sem)" != "" ]]; then
 	echo "parallel is installed - using fast mode"
 	parasem="1"
@@ -117,6 +140,8 @@ fi
 }
 
 function f_slow_list_nodes { #list nodes in series
+fonction=f_slow_list_nodes
+f_debug $fonction
 mapfile -t nodes<"$directory/nodelist.txt"
 for node in "${nodes[@]}"; do
 	IFS=, read nodeaddress sshport <<< $node
@@ -139,6 +164,8 @@ done
 }
 
 function f_fast_list_nodes { #list nodes in parallel
+fonction=f_fast_list_nodes
+f_debug $fonction
 mapfile -t nodes<"$directory/nodelist.txt"
 for node in "${nodes[@]}"; do
 	local nodeaddress;local sshport
@@ -174,6 +201,8 @@ sem --wait
 }
 
 function f_list_nodes { # starts either slow or fast mode depending on $parasem value
+fonction=f_list_nodes
+f_debug $fonction
 f_parasem
 if [[ "$parasem" = "1" ]]; then
 	f_fast_list_nodes
@@ -184,6 +213,8 @@ f_stats
 }
 
 function f_add_node { # used to add a node
+fonction=f_add_node
+f_debug $fonction
 f_reset_nodeaddress
 echo "please type your node's address, $grelike 1.2.3.4$def -$red not http://1.2.3.4$def!!! - then enter"
 read nodeaddress
@@ -206,6 +237,8 @@ f_reset_nodeaddress
 }
 
 function f_del_node { # deletes a node
+fonction=f_del_node
+f_debug $fonction
 f_list_nodes
 f_reset_nodeaddress
 echo "please type the address of the node you would like to remove from list"
@@ -223,6 +256,8 @@ f_reset_nodeaddress
 }
 
 function f_stop_node { # make down
+fonction=f_stop_node
+f_debug $fonction
 cat "$directory/nodelist.txt"
 if [[ "$nodeaddress" = "" ]]; then
 	echo "Please give the address of the node you want to stop"
@@ -235,6 +270,8 @@ fi
 }
 
 function f_start_node { # make up
+fonction=f_start_node
+f_debug $fonction
 cat "$directory/nodelist.txt"
 if [[ "$nodeaddress" = "" ]]; then
 	echo "Please give the address of the node you want to start"
@@ -247,6 +284,8 @@ fi
 }
 
 function f_update_node { # update a node
+fonction=f_update_node
+f_debug $fonction
 if [[ "$nodeaddress" = "" ]]; then
 	cat "$directory/nodelist.txt"
 	echo "Please give the address of the node you want to update"
@@ -259,6 +298,8 @@ fi
 }
 
 function f_update_nodes { # update all nodes
+fonction=f_update_nodes
+f_debug $fonction
 mapfile -t nodes<"$directory/nodelist.txt"
 for node in "${nodes[@]}"; do
 	IFS=, read nodeaddress sshport <<< $node
@@ -267,6 +308,8 @@ done
 }
 
 function f_solve_error_137 { # function to solve error 137
+fonction=f_solve_error_137
+f_debug $fonction
 #ssh 'if [[ ! -f /swapfile ]]; then frspace=$(df | grep "/$"| awk '{ print $4 }'|tr -d ' ')&&if [[ "$frspace" -gt "6000000" ]]; then if [[ "$(whoami)" = "root" ]]; then fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab;else sudo bash -c 'fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab';fi;else echo "Disk space on / too low to create swap partition"; fi; else echo "swapfile already exists";fi'
 
 #ssh -p $sshport -i $sshkey $user@$nodeaddress "sudo bash -c 'cd chainpoint-node && if [[ "$(ls -lh /swapfile |cut -f5 -d" ")" = "1.0G" ]];then make down && swapoff /swapfile && rm /swapfile ;fi; if [[ ! -f /swapfile ]]; then frspace=$(df | grep "/$"| awk '{ print $4 }'|tr -d ' ')&&if [[ "$frspace" -gt "6000000" ]]; then if [[ "$(whoami)" = "root" ]]; then make down && fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab;else make down && fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' » /etc/fstab';fi;else echo "Disk space on / too low to create swap partition"; fi; fi;sudo -u $user make up'"
@@ -299,6 +342,8 @@ ssh -p $sshport -i $sshkey $user@$nodeaddress "sudo bash -c 'chmod +x error137.s
 }
 
 function m_solve_error_137 { # menu that calls f_solve_error_137 for one or all nodes
+fonction=m_solve_error_137
+f_debug $fonction
 echo "Type 1 to correct error on one node, and a to correct error on all nodes"
 read oneorall
 if [[ "$oneorall" = "1" ]]; then
@@ -316,6 +361,8 @@ fi
 }
 
 function f_backupprivatekeys { # backs up all nodes private keys
+fonction=f_backupprivatekeys
+f_debug $fonction
 if [[ ! -f "$directory/privatekeys.txt" ]]; then
 	touch "$directory/privatekeys.txt"
 fi
@@ -335,6 +382,8 @@ done
 }
 
 function f_install_node { # used to install a node
+fonction=f_install_node
+f_debug $fonction
 ssh-keyscan -p $sshport $nodeaddress >> ~/.ssh/known_hosts
 if [[ "$user" != "root" ]];then
         sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user && echo $user:$userpass | chpasswd && sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config"
@@ -345,12 +394,15 @@ echo "$nodeaddress">>"$directory/nodelist.txt"
 }
 
 function f_install_nodes_fast { # installs a batch of nodes at once in parallel
+fonction=f_update_node
+f_debug $fonction
 mapfile -t nodes<"$directory/installnodes.txt"
 for node in "${nodes[@]}"; do
-#	sem -j +0
+	sem -j +0
 	local nodeaddress; local nodeethdaddress;local noderootpass; local sshport
 	IFS=, read nodeaddress nodeethdaddress noderootpass sshport<<< $node
-	echo "$noderootpass">"$directory/noderootpass.txt"
+	mkdir $directory/$nodeaddress
+	echo "$noderootpass">"$directory/$nodeaddress/noderootpass.txt"
 	if [[ ! -d .ssh ]]; then
 		mkdir .ssh
 	fi
@@ -358,22 +410,25 @@ for node in "${nodes[@]}"; do
 		touch ".ssh/known_hosts"
 	fi
 	ssh-keyscan -p $sshport $nodeaddress >> ~/.ssh/known_hosts
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get update"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y upgrade"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
 	sleep 60
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y install docker docker-compose"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "groupadd docker"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "fallocate -l 2G /swapfile"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "chmod 600 /swapfile"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "mkswap /swapfile"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "swapon /swapfile"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo '/swapfile none swap sw 0 0' >> /etc/fstab"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo $user:$userpass | chpasswd"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo \"$user ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config"
-	sshpass -f "$directory/noderootpass.txt" ssh -p $sshport root@$nodeaddress "service ssh restart"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "dpkg --configure -a"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get update"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y upgrade"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "apt-get -y install docker docker-compose"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "reboot"
+	sleep 60
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "groupadd docker"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "fallocate -l 2G /swapfile"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "chmod 600 /swapfile"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "mkswap /swapfile"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "swapon /swapfile"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo '/swapfile none swap sw 0 0' >> /etc/fstab"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "useradd -m -d /home/$user -s /bin/bash -G adm,sudo,lxd,docker $user"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo $user:$userpass | chpasswd"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "echo \"$user ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config"
+	sshpass -f "$directory/$nodeaddress/noderootpass.txt" ssh -p $sshport root@$nodeaddress "service ssh restart"
 	sleep 2
 	sshpass -f "$directory/userpass.txt" ssh-copy-id -i "$sshkey" -p $sshport $user@$nodeaddress
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "wget https://cdn.rawgit.com/chainpoint/chainpoint-node/13b0c1b5028c14776bf4459518755b2625ddba34/scripts/docker-install-ubuntu.sh"
@@ -383,11 +438,14 @@ for node in "${nodes[@]}"; do
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "sed -i -e 's/NODE_TNT_ADDRESS=/NODE_TNT_ADDRESS=$nodeethdaddress/g' -e 's/CHAINPOINT_NODE_PUBLIC_URI=/CHAINPOINT_NODE_PUBLIC_URI=http:\/\/$nodeaddress/g' chainpoint-node/.env"
 	ssh -p $sshport -i $sshkey $user@$nodeaddress "cd chainpoint-node && make up"
 	echo "$nodeaddress,$sshport">>"$directory/nodelist.txt"
+	rm -Rf "$directory/$nodeaddress/" && sleep 1
 done
-#sem --wait
+sem --wait
 }
 
 function f_install_nodes_slow { # installs a batch of nodes at once in series
+fonction=f_install_nodes_slow
+f_debug $fonction
 mapfile -t nodes<"$directory/installnodes.txt"
 for node in "${nodes[@]}"; do
 	IFS=, read nodeaddress nodeethdaddress noderootpass sshport<<< $node
@@ -397,6 +455,8 @@ done
 }
 
 function f_install_nodes {
+fonction=f_install_nodes
+f_debug $fonction
 	f_parasem
 	if [[ "$parasem" = "1" ]]; then
 		echo "$redfast mode untested; type y to try it, and please report results - type something else to use slow mode$def!!!"
@@ -414,6 +474,8 @@ function f_install_nodes {
 }
 
 function f_install_main {
+fonction=f_install_main
+f_debug $fonction
 echo "$red Note that you should: 1. Create ethereum address(es), 2. Install and start node(s), 3. Send some TNT to the address(es):$bol IN THAT SPECIFIC ORDER OF ACTION$def"
 if [[ ! -f installnodes.txt ]]; then
 	echo "$gre For autoinstall of multiple nodes, please create a "installnodes.txt" with one line per node in the following format:$bol nodeaddress,nodeethaddress,rootpassword$red -  press y to edit list now$def."
@@ -444,6 +506,8 @@ shred -u -n 10 "$directory/userpass.txt" "$directory/noderootpass.txt" "$directo
 }
 
 function m_main_menu {
+fonction=m_main_menu
+f_debug $fonction
 while [ 1 ]
 do
 	PS3='Choose a number: '
